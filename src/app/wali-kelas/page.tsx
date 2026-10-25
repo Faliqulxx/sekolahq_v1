@@ -43,7 +43,8 @@ import {
   Layers,
   RefreshCw,
   Zap,
-  CalendarX
+  CalendarX,
+  LogOut
 } from 'lucide-react';
 import {
   MOCK_ACADEMIC_YEARS,
@@ -779,6 +780,21 @@ export default function WaliKelasPage() {
                 <div className="text-[#8A8D93] text-[10px]">Wali Kelas 8-A & Guru IPA</div>
               </div>
             </div>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('sekolahq_auth_user');
+                } catch {}
+                window.location.href = '/admin';
+              }}
+              className="p-2 rounded-xl text-[#8A8D93] hover:text-[#FF4C51] hover:bg-[#FF4C51]/10 border border-transparent hover:border-[#FF4C51]/20 transition-all ml-1 cursor-pointer"
+              title="Keluar / Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
 
           </div>
         </div>

@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import LoginView, { AuthenticatedUser } from '@/components/auth/LoginView';
 import {
   LayoutDashboard,
   GraduationCap,
@@ -50,7 +52,8 @@ import {
   Layers,
   CalendarDays,
   Key,
-  CalendarCheck
+  CalendarCheck,
+  LogOut
 } from 'lucide-react';
 import { SCHOOL_INFO, TEACHERS, NEWS, GALLERY, TESTIMONIALS, Teacher, NewsItem, GalleryItem } from '@/data/schoolData';
 import {
@@ -133,6 +136,33 @@ interface MessageItem {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+
+  useEffect(() => {
+    try {
+      const session = sessionStorage.getItem('sekolahq_auth_user');
+      if (session) {
+        const user = JSON.parse(session);
+        if (user.roleCategory === 'Admin Pusat' || user.username === 'admin') {
+          setCurrentUser(user);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAuthChecking(false);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem('sekolahq_auth_user');
+    } catch {}
+    setCurrentUser(null);
+  };
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true); // Toggleable sidebar (desktop & mobile)
@@ -154,7 +184,6 @@ export default function AdminPage() {
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   const [showAddPhotoModal, setShowAddPhotoModal] = useState(false);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
-  const [showSupabaseModal, setShowSupabaseModal] = useState(false);
 
   // Form State for Adding Teacher
   const [newTeacher, setNewTeacher] = useState<{
@@ -613,6 +642,32 @@ export default function AdminPage() {
     return matchesSearch && matchesFilter;
   });
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#F4F5FA] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-9 h-9 border-3 border-[#8C57FF] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-[#8A8D93] font-medium">Memverifikasi sesi admin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <LoginView
+        onLoginSuccess={(user) => {
+          if (user.roleCategory === 'Admin Pusat') {
+            setCurrentUser(user);
+          } else {
+            router.push('/wali-kelas');
+          }
+        }}
+        subtitleNote="Ketik /admin di peramban Anda untuk mengakses portal admin & dewan guru Sekolah-Q."
+      />
+    );
+  }
+
   return (
     <div className="h-screen bg-[#F4F5FA] text-[#3A3541] flex flex-col font-sans relative overflow-hidden selection:bg-[#16B1FF]/15 selection:text-[#0288D1]">
       
@@ -693,15 +748,6 @@ export default function AdminPage() {
 
           {/* Top Header Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Database Info Pill */}
-            <button
-              type="button"
-              onClick={() => setShowSupabaseModal(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border border-amber-500/30 text-xs font-semibold shadow-xs transition-all active:scale-95"
-            >
-              <Database className="w-3.5 h-3.5 text-amber-600" />
-              <span>Mock Mode (Siap Supabase)</span>
-            </button>
 
             {/* Direct Link to Dedicated Homeroom Teacher Portal */}
             <Link
@@ -744,6 +790,16 @@ export default function AdminPage() {
                 <div className="text-[#8A8D93] text-[10px]">Super Administrator</div>
               </div>
             </div>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-2 rounded-xl text-[#8A8D93] hover:text-[#FF4C51] hover:bg-[#FF4C51]/10 border border-transparent hover:border-[#FF4C51]/20 transition-all ml-1 cursor-pointer"
+              title="Keluar / Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -916,10 +972,7 @@ export default function AdminPage() {
                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-bold text-[#0288D1] hover:bg-[#16B1FF]/8 transition-all cursor-pointer select-none group"
                 title="Sembunyikan / Tampilkan Manajemen Akademik"
               >
-                <div className="flex items-center gap-1.5">
-                  <span className="uppercase tracking-wider">Manajemen Akademik</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#16B1FF]/10 text-[#0288D1] border border-[#16B1FF]/20 font-bold">TERPADU</span>
-                </div>
+                <span className="uppercase tracking-wider">Manajemen Akademik</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-[#0288D1]/70 font-normal">{akademikOpen ? 'Tutup' : 'Buka'}</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-[#0288D1]/70 group-hover:text-[#0288D1] transition-transform duration-200 ${akademikOpen ? 'rotate-180' : ''}`} />
@@ -1105,18 +1158,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Bottom Database Card (Wali Kelas Style) */}
-          <div className="p-3 m-3 mt-1 shrink-0 rounded-2xl bg-[#F4F5FA] border border-[#E7E7E9]">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-lg bg-gradient-to-r from-[#16B1FF] to-[#8C57FF] text-white shadow-xs">
-                <Database className="w-3.5 h-3.5" />
-              </span>
-              <span className="text-xs font-bold text-[#3A3541]">Supabase Ready</span>
-            </div>
-            <p className="text-[11px] text-[#6B6774] leading-relaxed">
-              Schema lengkap tersedia di file <code className="text-[#0288D1] font-semibold font-mono bg-[#16B1FF]/10 px-1 py-0.2 rounded text-[10px]">backend.md</code>.
-            </p>
-          </div>
         </aside>
 
         {/* ============================================================== */}
@@ -2619,71 +2660,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* MODAL 5: PANDUAN KONEKSI SUPABASE */}
-      {/* ============================================================== */}
-      {showSupabaseModal && (
-        <div className="fixed inset-0 z-50 bg-[#3A3541]/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white border border-[#E7E7E9] p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F4F5FA]">
-              <h3 className="text-base font-bold text-[#3A3541] flex items-center gap-2">
-                <Database className="w-5 h-5 text-[#8C57FF]" />
-                <span>Panduan Integrasi Supabase Database</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowSupabaseModal(false)}
-                className="p-1.5 rounded-lg bg-[#F4F5FA] hover:bg-slate-200 text-[#6B6774] transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="text-xs text-[#6B6774] space-y-3 leading-relaxed">
-              <p>
-                Tampilan Admin Panel ini saat ini menggunakan <strong>Mock State Interaktif</strong> sehingga Anda dapat langsung menguji alur kerja (tambah/edit/status/export) tanpa kendala konfigurasi backend.
-              </p>
-              
-              <div className="p-3.5 rounded-xl bg-[#8C57FF]/10 border border-[#8C57FF]/25 text-[#7335E5] text-xs">
-                <strong>File Dokumentasi Backend Siap Digunakan:</strong>
-                <p className="mt-1">
-                  Buka file <code className="bg-white px-1.5 py-0.5 rounded text-[#7335E5] font-mono border border-[#8C57FF]/20">backend.md</code> di root direktori project untuk melihat skema tabel SQL lengkap, RLS policy, storage bucket, dan contoh kode Next.js Server Actions.
-                </p>
-              </div>
-
-              <div className="space-y-1.5 text-[#6B6774]">
-                <div className="font-semibold text-[#3A3541]">4 Langkah Singkat Menyambungkan:</div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[#8C57FF]/15 text-[#8C57FF] flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
-                  <span>Buat project baru di <strong>supabase.com</strong>.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[#8C57FF]/15 text-[#8C57FF] flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
-                  <span>Salin script SQL dari <code className="text-[#8C57FF] font-medium">backend.md</code> ke Supabase SQL Editor.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[#8C57FF]/15 text-[#8C57FF] flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
-                  <span>Masukkan URL & Anon Key ke file <code className="text-[#8C57FF] font-medium">.env.local</code>.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[#8C57FF]/15 text-[#8C57FF] flex items-center justify-center text-[10px] font-bold shrink-0">4</span>
-                  <span>Install library: <code className="text-[#8C57FF] font-mono font-medium">npm i @supabase/supabase-js @supabase/ssr</code>.</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-[#F4F5FA]">
-              <button
-                type="button"
-                onClick={() => setShowSupabaseModal(false)}
-                className="px-4 py-2 rounded-lg bg-[#8C57FF] hover:bg-[#7E4EE6] text-white text-xs font-bold shadow-[0_2px_8px_rgba(140,87,255,0.35)] transition-colors"
-              >
-                Saya Mengerti
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
