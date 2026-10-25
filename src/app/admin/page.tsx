@@ -36,7 +36,9 @@ import {
   FileSpreadsheet,
   Check,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Upload,
+  Camera
 } from 'lucide-react';
 import { SCHOOL_INFO, TEACHERS, NEWS, GALLERY, TESTIMONIALS } from '@/data/schoolData';
 
@@ -82,6 +84,46 @@ export default function AdminPage() {
   const [showAddPhotoModal, setShowAddPhotoModal] = useState(false);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [showSupabaseModal, setShowSupabaseModal] = useState(false);
+
+  // Form State for Adding Teacher
+  const [newTeacher, setNewTeacher] = useState({
+    name: '',
+    role: '',
+    subject: '',
+    education: '',
+    category: 'MIPA & Teknologi',
+    imageUrl: '/images/indo/teacher-tech.webp'
+  });
+
+  // Form State for Adding News
+  const [newNews, setNewNews] = useState({
+    title: '',
+    category: 'Prestasi Siswa',
+    excerpt: '',
+    content: '',
+    imageUrl: '/images/indo/hero-students.webp'
+  });
+
+  // Form State for Adding Photo
+  const [newPhoto, setNewPhoto] = useState({
+    title: '',
+    category: 'Fasilitas & Lab',
+    imageUrl: '/images/indo/classroom-lab.webp'
+  });
+
+  // Reusable File Upload to Data URL / Preview Handler
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (reader.result) {
+        setter(reader.result as string);
+        triggerToast('Foto berhasil dimuat!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Mock PPDB Applicants Data
   const [applicants, setApplicants] = useState<Applicant[]>([
@@ -249,6 +291,90 @@ export default function AdminPage() {
       setSelectedApplicant(prev => prev ? { ...prev, status: newStatus } : null);
     }
     triggerToast(`Status ${id} diubah menjadi "${newStatus}"`);
+  };
+
+  // Save New Teacher with uploaded or selected photo
+  const handleSaveTeacher = () => {
+    if (!newTeacher.name.trim()) {
+      triggerToast('Mohon masukkan nama guru');
+      return;
+    }
+    const created = {
+      id: `guru-${Date.now()}`,
+      name: newTeacher.name,
+      role: newTeacher.role || 'Guru Mata Pelajaran',
+      subject: newTeacher.subject || 'Pengajar',
+      education: newTeacher.education || 'S1 Kependidikan',
+      category: newTeacher.category,
+      quote: 'Mendidik dengan hati untuk masa depan generasi bangsa.',
+      imageUrl: newTeacher.imageUrl
+    };
+    setTeachersList(prev => [created, ...prev]);
+    setShowAddTeacherModal(false);
+    setNewTeacher({
+      name: '',
+      role: '',
+      subject: '',
+      education: '',
+      category: 'MIPA & Teknologi',
+      imageUrl: '/images/indo/teacher-tech.webp'
+    });
+    triggerToast('Guru baru berhasil ditambahkan beserta fotonya!');
+  };
+
+  // Save New News with uploaded or selected cover
+  const handleSaveNews = () => {
+    if (!newNews.title.trim()) {
+      triggerToast('Mohon masukkan judul berita');
+      return;
+    }
+    const created = {
+      id: `news-${Date.now()}`,
+      slug: newNews.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      title: newNews.title,
+      category: newNews.category,
+      date: 'Hari ini',
+      author: 'Humas Sekolah-Q',
+      excerpt: newNews.excerpt || newNews.title,
+      content: newNews.content || newNews.excerpt || newNews.title,
+      imageUrl: newNews.imageUrl,
+      readTime: '3 menit',
+      isFeatured: true
+    };
+    setNewsList(prev => [created, ...prev]);
+    setShowAddNewsModal(false);
+    setNewNews({
+      title: '',
+      category: 'Prestasi Siswa',
+      excerpt: '',
+      content: '',
+      imageUrl: '/images/indo/hero-students.webp'
+    });
+    triggerToast('Berita baru berhasil diterbitkan beserta foto cover!');
+  };
+
+  // Save New Photo to Gallery
+  const handleSavePhoto = () => {
+    if (!newPhoto.title.trim()) {
+      triggerToast('Mohon masukkan judul foto');
+      return;
+    }
+    const created = {
+      id: `galeri-${Date.now()}`,
+      title: newPhoto.title,
+      category: newPhoto.category,
+      date: 'Okt 2026',
+      imageUrl: newPhoto.imageUrl,
+      description: newPhoto.title
+    };
+    setGalleryList(prev => [created, ...prev]);
+    setShowAddPhotoModal(false);
+    setNewPhoto({
+      title: '',
+      category: 'Fasilitas & Lab',
+      imageUrl: '/images/indo/classroom-lab.webp'
+    });
+    triggerToast('Foto baru berhasil diunggah ke Galeri!');
   };
 
   // Filtered applicants
@@ -1364,8 +1490,8 @@ export default function AdminPage() {
       {/* MODAL 2: TULIS BERITA BARU */}
       {/* ============================================================== */}
       {showAddNewsModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Newspaper className="w-5 h-5 text-purple-400" />
@@ -1385,29 +1511,70 @@ export default function AdminPage() {
                 <label className="block text-slate-400 font-medium mb-1">Judul Artikel</label>
                 <input
                   type="text"
+                  value={newNews.title}
+                  onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
                   placeholder="Misal: Tim Robotika Sekolah-Q Raih Juara 1 Nasional..."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">Kategori</label>
-                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
-                    <option>Prestasi Siswa</option>
-                    <option>Akademik</option>
-                    <option>Kegiatan Sekolah</option>
-                    <option>Pengumuman</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Kategori</label>
+                <select
+                  value={newNews.category}
+                  onChange={(e) => setNewNews({ ...newNews, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs"
+                >
+                  <option>Prestasi Siswa</option>
+                  <option>Akademik</option>
+                  <option>Kegiatan Sekolah</option>
+                  <option>Pengumuman</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">Pilih Gambar Cover (WebP)</label>
-                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
-                    <option value="/images/indo/teacher-tech.webp">Lab Robotika (WebP)</option>
-                    <option value="/images/indo/hero-students.webp">Siswa Berprestasi (WebP)</option>
-                    <option value="/images/indo/classroom-lab.webp">Ruang Kelas Lab (WebP)</option>
-                  </select>
+              {/* Upload Foto Cover Berita */}
+              <div>
+                <label className="block text-slate-400 font-medium mb-1.5">Gambar Cover Berita</label>
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/10 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-20 h-14 rounded-xl overflow-hidden bg-slate-800 border border-white/10 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={newNews.imageUrl}
+                        alt="Preview Cover"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Pilih Foto dari Perangkat</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, (url) => setNewNews(prev => ({ ...prev, imageUrl: url })))}
+                        />
+                      </label>
+                      <div className="text-[10px] text-slate-400">
+                        Pilih foto JPG, PNG, atau WebP dari komputer / HP Anda
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-[10px] text-slate-400 block mb-1">Atau pilih dari koleksi bawaan:</span>
+                    <select
+                      value={newNews.imageUrl}
+                      onChange={(e) => setNewNews({ ...newNews, imageUrl: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-300 text-[11px]"
+                    >
+                      <option value="/images/indo/hero-students.webp">Siswa Berprestasi (WebP)</option>
+                      <option value="/images/indo/teacher-tech.webp">Lab Robotika & Komputer (WebP)</option>
+                      <option value="/images/indo/classroom-lab.webp">Ruang Kelas & Sains (WebP)</option>
+                      <option value="/images/indo/campus-front.webp">Gedung Sekolah (WebP)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -1415,6 +1582,8 @@ export default function AdminPage() {
                 <label className="block text-slate-400 font-medium mb-1">Ringkasan Singkat (Excerpt)</label>
                 <textarea
                   rows={2}
+                  value={newNews.excerpt}
+                  onChange={(e) => setNewNews({ ...newNews, excerpt: e.target.value })}
                   placeholder="1-2 kalimat ringkasan yang menarik pembaca..."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                 ></textarea>
@@ -1423,7 +1592,9 @@ export default function AdminPage() {
               <div>
                 <label className="block text-slate-400 font-medium mb-1">Isi Berita Lengkap</label>
                 <textarea
-                  rows={4}
+                  rows={3}
+                  value={newNews.content}
+                  onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
                   placeholder="Tuliskan isi berita atau liputan lengkap di sini..."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                 ></textarea>
@@ -1440,11 +1611,8 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowAddNewsModal(false);
-                  triggerToast('Berita baru berhasil diterbitkan!');
-                }}
-                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold"
+                onClick={handleSaveNews}
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-md"
               >
                 Terbitkan Berita
               </button>
@@ -1457,8 +1625,8 @@ export default function AdminPage() {
       {/* MODAL 3: TAMBAH DEWAN GURU BARU */}
       {/* ============================================================== */}
       {showAddTeacherModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-5 h-5 text-emerald-400" />
@@ -1478,6 +1646,8 @@ export default function AdminPage() {
                 <label className="block text-slate-400 font-medium mb-1">Nama Lengkap & Gelar</label>
                 <input
                   type="text"
+                  value={newTeacher.name}
+                  onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
                   placeholder="Misal: Ahmad Fauzi, S.Pd., M.Si."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                 />
@@ -1488,6 +1658,8 @@ export default function AdminPage() {
                   <label className="block text-slate-400 font-medium mb-1">Jabatan / Peran</label>
                   <input
                     type="text"
+                    value={newTeacher.role}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, role: e.target.value })}
                     placeholder="Misal: Guru MIPA / Pembina OSIS"
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                   />
@@ -1495,7 +1667,11 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block text-slate-400 font-medium mb-1">Kategori</label>
-                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
+                  <select
+                    value={newTeacher.category}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs"
+                  >
                     <option>Pimpinan</option>
                     <option>MIPA & Teknologi</option>
                     <option>Bahasa & Humaniora</option>
@@ -1509,6 +1685,8 @@ export default function AdminPage() {
                   <label className="block text-slate-400 font-medium mb-1">Mata Pelajaran</label>
                   <input
                     type="text"
+                    value={newTeacher.subject}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })}
                     placeholder="Misal: Matematika & Robotika"
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                   />
@@ -1518,21 +1696,59 @@ export default function AdminPage() {
                   <label className="block text-slate-400 font-medium mb-1">Pendidikan Terakhir</label>
                   <input
                     type="text"
+                    value={newTeacher.education}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, education: e.target.value })}
                     placeholder="Misal: S2 Pendidikan Matematika UNESA"
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                   />
                 </div>
               </div>
 
+              {/* Upload Foto Guru */}
               <div>
-                <label className="block text-slate-400 font-medium mb-1">Pilih Foto Profil (WebP)</label>
-                <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
-                  <option value="/images/indo/teacher-tech.webp">M. Rizal Kurniawan, S.Kom. (Guru IT)</option>
-                  <option value="/images/indo/teacher-science.webp">Budi Santoso, S.Si., M.Pd. (Guru Sains)</option>
-                  <option value="/images/indo/teacher-english.webp">Fitria Anindita, M.Pd. (Guru Bahasa)</option>
-                  <option value="/images/indo/teacher-tahfidz.webp">Ust. Ahmad Farhan (Guru Tahfidz)</option>
-                  <option value="/images/indo/teacher-senior.webp">Drs. Eko Prasetyo (Guru Senior)</option>
-                </select>
+                <label className="block text-slate-400 font-medium mb-1.5">Foto Profil Guru</label>
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/10 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-800 border-2 border-primary-500/40 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={newTeacher.imageUrl}
+                        alt="Preview Guru"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Pilih Foto dari Perangkat</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, (url) => setNewTeacher(prev => ({ ...prev, imageUrl: url })))}
+                        />
+                      </label>
+                      <div className="text-[10px] text-slate-400">
+                        Upload foto resmi guru (PNG, JPG, atau WebP)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-[10px] text-slate-400 block mb-1">Atau gunakan foto dewan guru bawaan:</span>
+                    <select
+                      value={newTeacher.imageUrl}
+                      onChange={(e) => setNewTeacher({ ...newTeacher, imageUrl: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-300 text-[11px]"
+                    >
+                      <option value="/images/indo/teacher-tech.webp">M. Rizal Kurniawan, S.Kom. (Guru IT)</option>
+                      <option value="/images/indo/teacher-science.webp">Budi Santoso, S.Si., M.Pd. (Guru Sains)</option>
+                      <option value="/images/indo/teacher-english.webp">Fitria Anindita, M.Pd. (Guru Bahasa)</option>
+                      <option value="/images/indo/teacher-tahfidz.webp">Ust. Ahmad Farhan (Guru Tahfidz)</option>
+                      <option value="/images/indo/teacher-senior.webp">Drs. Eko Prasetyo (Guru Senior)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1546,11 +1762,8 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowAddTeacherModal(false);
-                  triggerToast('Data guru baru berhasil ditambahkan!');
-                }}
-                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold"
+                onClick={handleSaveTeacher}
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-md"
               >
                 Simpan Guru
               </button>
@@ -1563,8 +1776,8 @@ export default function AdminPage() {
       {/* MODAL 4: UPLOAD FOTO GALERI BARU */}
       {/* ============================================================== */}
       {showAddPhotoModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-cyan-400" />
@@ -1584,29 +1797,69 @@ export default function AdminPage() {
                 <label className="block text-slate-400 font-medium mb-1">Judul / Keterangan Foto</label>
                 <input
                   type="text"
+                  value={newPhoto.title}
+                  onChange={(e) => setNewPhoto({ ...newPhoto, title: e.target.value })}
                   placeholder="Misal: Praktikum Kimia Dasar di Lab IPA Terpadu..."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">Kategori Dokumentasi</label>
-                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
-                    <option>Fasilitas & Lab</option>
-                    <option>Akademik & Kelas</option>
-                    <option>Ekstrakurikuler</option>
-                    <option>Prestasi & Upacara</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Kategori Dokumentasi</label>
+                <select
+                  value={newPhoto.category}
+                  onChange={(e) => setNewPhoto({ ...newPhoto, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs"
+                >
+                  <option>Fasilitas & Lab</option>
+                  <option>Akademik & Kelas</option>
+                  <option>Ekstrakurikuler</option>
+                  <option>Prestasi & Upacara</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">Pilih Asset (WebP)</label>
-                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
-                    <option value="/images/indo/classroom-lab.webp">Ruang Lab & Belajar</option>
-                    <option value="/images/indo/campus-front.webp">Gedung Kampus Depan</option>
-                    <option value="/images/indo/hero-students.webp">Upacara & Siswa Berprestasi</option>
-                  </select>
+              {/* Upload Foto Dokumentasi */}
+              <div>
+                <label className="block text-slate-400 font-medium mb-1.5">File Foto Dokumentasi</label>
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/10 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-800 border border-white/10 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={newPhoto.imageUrl}
+                        alt="Preview Foto"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Pilih Foto dari Perangkat</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, (url) => setNewPhoto(prev => ({ ...prev, imageUrl: url })))}
+                        />
+                      </label>
+                      <div className="text-[10px] text-slate-400">
+                        Upload dokumentasi kegiatan (JPG, PNG, atau WebP)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-[10px] text-slate-400 block mb-1">Atau gunakan foto fasilitas bawaan:</span>
+                    <select
+                      value={newPhoto.imageUrl}
+                      onChange={(e) => setNewPhoto({ ...newPhoto, imageUrl: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-300 text-[11px]"
+                    >
+                      <option value="/images/indo/classroom-lab.webp">Ruang Lab & Belajar</option>
+                      <option value="/images/indo/campus-front.webp">Gedung Kampus Depan</option>
+                      <option value="/images/indo/hero-students.webp">Upacara & Siswa Berprestasi</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1621,11 +1874,8 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowAddPhotoModal(false);
-                  triggerToast('Foto dokumentasi berhasil ditambahkan ke Galeri!');
-                }}
-                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold"
+                onClick={handleSavePhoto}
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-md"
               >
                 Upload Foto
               </button>
