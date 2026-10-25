@@ -946,7 +946,9 @@ export default function AdminPage() {
                     </div>
 
                     <div className="w-full pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                      <span className="text-[10px] text-slate-400 font-mono">NIP: {teacher.nip.slice(0, 10)}...</span>
+                      <span className="text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded bg-white/5 border border-white/10">
+                        {teacher.category || 'Pendidik'}
+                      </span>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
@@ -1452,7 +1454,188 @@ export default function AdminPage() {
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 3: PANDUAN KONEKSI SUPABASE */}
+      {/* MODAL 3: TAMBAH DEWAN GURU BARU */}
+      {/* ============================================================== */}
+      {showAddTeacherModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-400" />
+                <span>Tambah Dewan Guru & Staf Baru</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddTeacherModal(false)}
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Nama Lengkap & Gelar</label>
+                <input
+                  type="text"
+                  placeholder="Misal: Ahmad Fauzi, S.Pd., M.Si."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Jabatan / Peran</label>
+                  <input
+                    type="text"
+                    placeholder="Misal: Guru MIPA / Pembina OSIS"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Kategori</label>
+                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
+                    <option>Pimpinan</option>
+                    <option>MIPA & Teknologi</option>
+                    <option>Bahasa & Humaniora</option>
+                    <option>Keagamaan & Karakter</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Mata Pelajaran</label>
+                  <input
+                    type="text"
+                    placeholder="Misal: Matematika & Robotika"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Pendidikan Terakhir</label>
+                  <input
+                    type="text"
+                    placeholder="Misal: S2 Pendidikan Matematika UNESA"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Pilih Foto Profil (WebP)</label>
+                <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
+                  <option value="/images/indo/teacher-tech.webp">M. Rizal Kurniawan, S.Kom. (Guru IT)</option>
+                  <option value="/images/indo/teacher-science.webp">Budi Santoso, S.Si., M.Pd. (Guru Sains)</option>
+                  <option value="/images/indo/teacher-english.webp">Fitria Anindita, M.Pd. (Guru Bahasa)</option>
+                  <option value="/images/indo/teacher-tahfidz.webp">Ust. Ahmad Farhan (Guru Tahfidz)</option>
+                  <option value="/images/indo/teacher-senior.webp">Drs. Eko Prasetyo (Guru Senior)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowAddTeacherModal(false)}
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddTeacherModal(false);
+                  triggerToast('Data guru baru berhasil ditambahkan!');
+                }}
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold"
+              >
+                Simpan Guru
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 4: UPLOAD FOTO GALERI BARU */}
+      {/* ============================================================== */}
+      {showAddPhotoModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-white/15 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-cyan-400" />
+                <span>Upload Foto Dokumentasi Baru</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddPhotoModal(false)}
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Judul / Keterangan Foto</label>
+                <input
+                  type="text"
+                  placeholder="Misal: Praktikum Kimia Dasar di Lab IPA Terpadu..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-primary-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Kategori Dokumentasi</label>
+                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
+                    <option>Fasilitas & Lab</option>
+                    <option>Akademik & Kelas</option>
+                    <option>Ekstrakurikuler</option>
+                    <option>Prestasi & Upacara</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Pilih Asset (WebP)</label>
+                  <select className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-slate-200 text-xs">
+                    <option value="/images/indo/classroom-lab.webp">Ruang Lab & Belajar</option>
+                    <option value="/images/indo/campus-front.webp">Gedung Kampus Depan</option>
+                    <option value="/images/indo/hero-students.webp">Upacara & Siswa Berprestasi</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowAddPhotoModal(false)}
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddPhotoModal(false);
+                  triggerToast('Foto dokumentasi berhasil ditambahkan ke Galeri!');
+                }}
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold"
+              >
+                Upload Foto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 5: PANDUAN KONEKSI SUPABASE */}
       {/* ============================================================== */}
       {showSupabaseModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
