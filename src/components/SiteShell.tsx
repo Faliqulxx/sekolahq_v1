@@ -8,11 +8,11 @@ import Footer from "@/components/Footer";
 
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAppRoute = pathname?.startsWith('/admin') || pathname?.startsWith('/wali-kelas');
 
-  // If in admin panel, do not render public AnnouncementBar, Navbar, or Footer
-  if (isAdmin) {
-    return <div className="min-h-screen bg-slate-900 text-slate-100">{children}</div>;
+  // If in admin panel or homeroom teacher portal, do not render public AnnouncementBar, Navbar, or Footer
+  if (isAppRoute) {
+    return <div className="min-h-screen bg-[#F4F5FA] text-[#3A3541] antialiased">{children}</div>;
   }
 
   // Public site shell
