@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AnnouncementBar from "@/components/AnnouncementBar";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import SiteShell from "@/components/SiteShell";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://smpujungpangkah.sch.id'),
@@ -35,12 +33,9 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body className="antialiased min-h-screen flex flex-col bg-white text-slate-900 selection:bg-primary-100 selection:text-primary-900">
-        <AnnouncementBar />
-        <Navbar />
-        <main className="flex-grow">
+        <SiteShell>
           {children}
-        </main>
-        <Footer />
+        </SiteShell>
       </body>
     </html>
   );
